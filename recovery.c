@@ -61,6 +61,7 @@ static const struct option OPTIONS[] = {
   { "show_text", no_argument, NULL, 't' },
   { "sideload", no_argument, NULL, 'l' },
   { "shutdown_after", no_argument, NULL, 'p' },
+  { "locale", required_argument, NULL, 'L' },
   { NULL, 0, NULL, 0 },
 };
 
@@ -421,7 +422,7 @@ erase_volume(const char *volume) {
         copy_logs();
     }
 
-    ui_set_background(BACKGROUND_ICON_CLOCKWORK);
+    ui_set_background(0);
     ui_reset_progress();
     return result;
 }
@@ -762,7 +763,9 @@ wipe_data(int confirm) {
 
     ui_print("\n-- Wiping data...\n");
     device_wipe_data();
+    preserve_data_media(0);
     erase_volume("/data");
+    preserve_data_media(1);
     erase_volume("/cache");
     if (has_datadata()) {
         erase_volume("/datadata");
@@ -895,11 +898,14 @@ setup_adbd() {
 void reboot_main_system(int cmd, int flags, char *arg) {
     write_recovery_version();
 
+    // Disable root check
+    /*
 #ifdef BOARD_NATIVE_DUALBOOT
     device_verify_root_and_recovery();
 #else
     verify_root_and_recovery();
 #endif
+    */
 
     finish_recovery(NULL); // sync() in here
     vold_unmount_all();
@@ -1054,6 +1060,7 @@ main(int argc, char **argv) {
         case 't': ui_show_text(1); break;
         case 'l': sideload = 1; break;
         case 'p': shutdown_after = 1; break;
+        case 'L': break;
         case '?':
             LOGE("Invalid command argument\n");
             continue;
@@ -1133,7 +1140,7 @@ main(int argc, char **argv) {
         is_user_initiated_recovery = 1;
         if (!headless) {
             ui_set_show_text(1);
-            ui_set_background(BACKGROUND_ICON_CLOCKWORK);
+            ui_set_background(0);
         }
 
         if (extendedcommand_file_exists()) {
